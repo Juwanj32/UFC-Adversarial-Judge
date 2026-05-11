@@ -15,7 +15,7 @@ df = pd.read_csv('data/ufc_fights.csv')
 
 # line 14 | dataframe assigned to pandas reading a csv of data for the ufc fights | df holds all of UFC history 
 
-# CATEGORY SELECTION 
+# STAT SELECTION 
 
 features = {'R_avg_sig_strk_landed', 'L_avg_sig_strk_landed', 'R_reach_cms', 'L_reach_cms' }
 X = df[features].fillna(0)
