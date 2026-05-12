@@ -11,7 +11,7 @@ import shap
 # Line 5 | Open-source platform to debug and evaluate NLP (natural language processing), image, and tabular AI models.
 
 # LOAD DATA
-df = pd.read_csv('data/ufc_fights.csv')
+df = pd.read_csv('ufc-adversarial-judge/data/ufc_fights.csv')
 
 # line 14 | dataframe assigned to pandas reading a csv of data for the ufc fights | df holds all of UFC history 
 
@@ -42,4 +42,4 @@ explain = shap.TreeExplainer(model)
 shap_values = explain.shap_values(X_test)
 
 # line 41 | when the random forest classifier makes the decision trees its not able to be read by humans since its tiny math equations | treeExplainer translates this information so we can understand it 
-# line 42 | the shap value is where a score is assesed to every stat that explains how one fighter can have an 80% chance to win, while another has 20% chance | X_test is 
+# line 42 | the shap value is where a score is assesed to every stat that explains how one fighter can have an 80% chance to win, while another has 20% chance | X_test is the trained result of the data trained in X_train
