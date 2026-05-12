@@ -12,6 +12,7 @@ ufc-adversarial-judge/
 First train the model 
 
 The Logic: Training Your First Model
+
 Before you use SHAP, you need to "teach" your model. Think of it like this:
 
 Feature Selection: You pick the "clues" (stats).
