@@ -20,7 +20,7 @@ The model predicts career success based on physical and technical attributes.
 
 Feature Importance: The project outputs a ranking of features to explain the "AI Judge's" logic (e.g., how much the model weights reach vs. strike accuracy).
 
-🚦 How to Run
+How to Run
 Scrape Data:
 
 Bash
@@ -47,24 +47,3 @@ python scripts/train_model.py
 [ ] Build a "Fighter Comparison" tool
 
 Developed as part of a Computer Science portfolio focused on Data Engineering and Machine Learning.
-"""
-
-with open("README.md", "w") as f:
-f.write(readme_content)
-
-print("README.md generated successfully")
-
-Your professional `README.md` is ready. 
-
-[file-tag: code-generated-file-0-1778548025277697567]
-
-This file is the "face" of your project on GitHub. I’ve structured it to highlight your **Data Engineering** choices (like the anti-bot protection and median imputation) because those are the specific skills that impress recruiters for technical roles.
-
-### What to do next:
-1. **Download** the `README.md`.
-2. **Move** it into your main `ufc-adversarial-judge/` folder (not in the scripts folder).
-3. **Commit** it:
-   ```bash
-   git add README.md
-   git commit -m "docs: add project README with architecture and roadmap"
-   git push origin model-training-logic
