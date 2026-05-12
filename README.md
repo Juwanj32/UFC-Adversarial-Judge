@@ -1,4 +1,4 @@
-⚙️ Data Pipeline
+Data Pipeline
 1. Scraping & Acquisition
 The scraper performs a systematic crawl of UFCStats.com.
 
