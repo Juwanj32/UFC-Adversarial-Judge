@@ -1,45 +1,70 @@
-# to not overwhelm the reader I have put the code first and after the code there is a box of comments explaining whats going on, as to not clutter the code 
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-import shap 
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, r2_score
+from icecream import ic
 
+# line 1 | Standard data science toolkit to load our cleaned CSV into a structured table (DataFrame).
+# line 2 | Shuffles and splits our data so the model can learn on one set and be tested on another.
+# line 3 | Instead of a Classifier (Win/Loss), we use a Regressor to predict the numerical quantity of wins.
+# line 4 | Math utilities to check how far off the AI's guesses are from the actual fighter records.
+# line 5 | A debugging tool that prints variables in a more readable way than standard print().
 
-# line 2 | start the file by importing pandas and aliasing it so that its less typing | allows us to load the  UFC CSV and treat it like a table (called a DataFrame) so we can filter, sort, and clean it.
-# line 3 | its a utility function from scikit-Learn and We need to split our data into 2 defined groups This function shuffles the fights and divides them so the model doesn't just memorize the answers
-# line 4 | The type of model im gonna be training which is a collection of decision tree's and its great for tabular data 
-# Line 5 | Open-source platform to debug and evaluate NLP (natural language processing), image, and tabular AI models.
+def train_fighter_model():
+    # 1. LOAD THE CLEANED DATA
+    data_path = 'data/processed/cleaned_fighters.csv'
+    try:
+        df = pd.read_csv(data_path)
+    except FileNotFoundError:
+        ic("Error: Cleaned data not found. Run data_cleaning.py first!")
+        return
 
-# LOAD DATA
-df = pd.read_csv('ufc-adversarial-judge/data/ufc_fights.csv')
+    # line 13 | Points the script to the 'processed' folder where our data_cleaning.py saved the polished stats.
+    # line 15 | Reads the file; the 'try/except' block prevents a crash if the file is missing.
 
-# line 14 | dataframe assigned to pandas reading a csv of data for the ufc fights | df holds all of UFC history 
+    # 2. FEATURE SELECTION (X) AND TARGET (y)
+    features = ['height_cm', 'reach_cm', 'strike_accuracy', 'takedown_avg', 'win_ratio']
+    X = df[features]
+    y = df['wins']
 
-# STAT SELECTION 
+    # line 23 | features are the specific metrics (the 'DNA') we want the AI Judge to look at.
+    # line 24 | X represents the input data; we feed these stats into the model to find patterns.
+    # line 25 | y is the answer key; it's the actual number of wins we want the model to learn to predict.
 
-features = {'R_avg_sig_strk_landed', 'L_avg_sig_strk_landed', 'R_reach_cms', 'L_reach_cms' }
-X = df[features].fillna(0)
-Y = df['winner']
+    # 3. THE SPLIT
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# line 20 | features are categories in the stats we want the model to focus on to make a guess of the winner 
-# line 21 | assign variable to  a single feature in the dataframe | we use fillna(0) to make sure we get all usable numbers if blank cells appear
-# line 22 | same thing as 20 man, but no fillna and it represents the winner of the fight
+    # line 31 | Unpacks the data into four variables: 80% for training the brain, 20% for the final exam (testing).
+    # line 31 | random_state=42 ensures the "random" shuffle is the same every time we run it for consistency.
 
-# SPLIT
-X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.2,random_state = 42)
+    # 4. INITIALIZE AND TRAIN MODEL 
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    ic("Training the Random Forest model...")
+    model.fit(X_train, y_train)
 
-# line 29 | train_test_split uses the four variables and uses unpacking to give each variable some training features and labels | random_state = 42 is a random seed generator 
+    # line 37 | Builds a forest of 100 decision trees that work together to vote on the best prediction.
+    # line 39 | .fit is the actual "learning" phase where the trees find the links between stats and wins.
 
-# TRAIN MODEL 
-model = RandomForestClassifier(n_estimators = 100)
-model.fit = (X_train, y_train)
+    # 5. EVALUATE (THE TEST)
+    predictions = model.predict(X_test)
+    mae = mean_absolute_error(y_test, predictions)
+    r2 = r2_score(y_test, predictions)
 
-# line 34 | assiging to a variable called model a 100 differentdecision trees to decide the winner 
-# line 35 | .fit looks for patterns betweens the stats and winners 
+    # line 43 | The model looks at the 20% test stats it has NEVER seen before and makes a guess.
+    # line 44 | MAE calculates the average "miss"—e.g., if it says 10 wins and the fighter has 8, the error is 2.
+    # line 45 | R2 Score measures how much of the "win" logic the model actually understands (0 to 1 scale).
 
-# SHAP
-explain = shap.TreeExplainer(model)
-shap_values = explain.shap_values(X_test)
+    # 6. FEATURE IMPORTANCE (THE 'JUDGE' LOGIC)
+    importances = pd.DataFrame({
+        'feature': features,
+        'importance': model.feature_importances_
+    }).sort_values(by='importance', ascending=False)
+    
+    ic("Feature Importances (What the AI Judge values most):")
+    ic(importances)
 
-# line 41 | when the random forest classifier makes the decision trees its not able to be read by humans since its tiny math equations | treeExplainer translates this information so we can understand it 
-# line 42 | the shap value is where a score is assesed to every stat that explains how one fighter can have an 80% chance to win, while another has 20% chance | X_test is the trained result of the data trained in X_train
+    # line 50 | Just like SHAP, this extracts which stat (reach, accuracy, etc.) influenced the trees the most.
+    # line 54 | Sorts the results so the most influential "Judicial" factor is at the very top.
+
+if __name__ == "__main__":
+    train_fighter_model()
