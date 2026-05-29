@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
 from icecream import ic
 
 # line 1 | Standard data science toolkit to load our cleaned CSV into a structured table (DataFrame).
@@ -11,21 +11,26 @@ from icecream import ic
 # line 5 | A debugging tool that prints variables in a more readable way than standard print().
 
 def train_fighter_model():
-    # 1. LOAD THE CLEANED DATA
-    data_path = 'data/processed/cleaned_fighters.csv'
-    try:
-        df = pd.read_csv(data_path)
-    except FileNotFoundError:
-        ic("Error: Cleaned data not found. Run data_cleaning.py first!")
-        return
+
+
+    # df.shape returns (rows, columns) — confirms how many fighters actually loaded
+    # Catches silent issues like the file being empty or only having 10 rows
+
 
     # line 13 | Points the script to the 'processed' folder where our data_cleaning.py saved the polished stats.
     # line 15 | Reads the file; the 'try/except' block prevents a crash if the file is missing.
 
-    # 2. FEATURE SELECTION (X) AND TARGET (y)
-    features = ['height_cm', 'reach_cm', 'strike_accuracy', 'takedown_avg', 'win_ratio']
-    X = df[features]
-    y = df['wins']
+    data_path = 'data/processed/matchups.csv'
+    df = pd.read_csv(data_path)
+
+    X = df.drop(columns=['winner'])   # all 8 difference columns
+    y = df['winner']                  # 1 = fighter A wins, 0 = fighter B wins
+        
+    X = X.dropna()
+    y = y[X.index]
+
+    # If any fighter is missing reach_cm or height_cm, the model crashes silently
+    # .dropna() removes those rows from X, then we realign y to match the same rows
 
     # line 23 | features are the specific metrics (the 'DNA') we want the AI Judge to look at.
     # line 24 | X represents the input data; we feed these stats into the model to find patterns.
@@ -38,7 +43,7 @@ def train_fighter_model():
     # line 31 | random_state=42 ensures the "random" shuffle is the same every time we run it for consistency.
 
     # 4. INITIALIZE AND TRAIN MODEL 
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
     ic("Training the Random Forest model...")
     model.fit(X_train, y_train)
 
@@ -46,9 +51,13 @@ def train_fighter_model():
     # line 39 | .fit is the actual "learning" phase where the trees find the links between stats and wins.
 
     # 5. EVALUATE (THE TEST)
-    predictions = model.predict(X_test)
-    mae = mean_absolute_error(y_test, predictions)
-    r2 = r2_score(y_test, predictions)
+    predictions = model.predict(X_test)         # ADD THIS LINE FIRST
+    acc = accuracy_score(y_test, predictions)
+    cm = confusion_matrix(y_test, predictions)
+    ic(f"Accuracy: {acc:.4f}")
+    ic(f"Confusion matrix:\n{cm}")
+    
+    # .4f gives R2 four decimal places since it's a small number between 0 and 1
 
     # line 43 | The model looks at the 20% test stats it has NEVER seen before and makes a guess.
     # line 44 | MAE calculates the average "miss"—e.g., if it says 10 wins and the fighter has 8, the error is 2.
@@ -56,7 +65,7 @@ def train_fighter_model():
 
     # 6. FEATURE IMPORTANCE (THE 'JUDGE' LOGIC)
     importances = pd.DataFrame({
-        'feature': features,
+        'feature': X.columns,
         'importance': model.feature_importances_
     }).sort_values(by='importance', ascending=False)
     

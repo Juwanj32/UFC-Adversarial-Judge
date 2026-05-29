@@ -16,12 +16,21 @@ from icecream import ic
 # line 8 | Pandas allows us to take the list of fighter dictionaries and turn them into a CSV table.
 # line 11 | BeautifulSoup is the "parser" that lets us search through HTML tags to find specific stats.
 
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+}
+
 # --- SETUP ---
 PROJECT_NAME = 'ufc_ai_judge_dataset'
 os.makedirs(f"data/raw", exist_ok=True) 
 os.makedirs(f"{PROJECT_NAME}/logs", exist_ok=True)
 
 # line 16 | Ensures the 'raw' data folder exists so the script doesn't crash when it tries to save the file.
+
+# try: Attempts the conversion. If the height string is something weird like
+# "N/A" or has only one number, re.findall() won't return exactly 2 values
+# and the unpacking (feet, inches = ...) will crash. Instead of the whole
+# script dying, except catches that crash and returns None safely.
 
 # --- HELPERS ---
 def convert_height_to_cm(height_str):
@@ -36,9 +45,15 @@ def convert_height_to_cm(height_str):
 
 # line 25 | Converts Imperial to Metric. ML models handle floats (175.26) better than strings (5' 9").
 
+# try: Wraps the entire scrape attempt for one fighter. Network requests can
+# fail for many reasons — timeout, bad HTML, missing CSS class, site blocking us.
+# Without try/except, one bad fighter page crashes the whole loop and loses
+# all the data collected so far. The except catches any error, logs which
+# URL caused it (so we can investigate), and returns None so the loop continues.
+
 def scrape_fighter_details(url):
     try:
-        res = requests.get(url, timeout=10)
+        res = requests.get(url, timeout=10, headers=HEADERS)
         soup = BeautifulSoup(res.text, 'html.parser')
         
         name = soup.select_one('.b-content__title-highlight').get_text(strip=True)
@@ -83,15 +98,18 @@ def main():
     
     for char in string.ascii_lowercase:
         url = f"http://ufcstats.com/statistics/fighters?char={char}&page=all"
-        res = requests.get(url)
+        res = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(res.text, 'html.parser')
         links = [a['href'] for a in soup.select('tr.b-statistics__table-row a') if 'fighter-details' in a['href']]
         all_fighter_urls.extend(list(set(links)))
+        
+        ic(f"Char {char}: found {len(links)} links")
+        break  # Stop after 'a' so we don't wait for all 26 letters
 
     # line 87-91 | Iterates through pages A to Z to gather every fighter's personal URL.
 
     all_fighter_urls = list(set(all_fighter_urls))
-    LIMIT = 20 
+    LIMIT = 200 
     final_dataset = []
     
     for i, link in enumerate(all_fighter_urls[:LIMIT]):
@@ -99,6 +117,8 @@ def main():
         if data:
             final_dataset.append(data)
             ic(f"Scraped {i+1}/{LIMIT}: {data['name']}")
+        else:
+            ic(f"SKIPPED {i+1}/{LIMIT}: {link}")  # Skips either bad HTMl formatting or missing stats ufc contestants
         
         time.sleep(random.uniform(1.0, 2.0))
 
